@@ -27,7 +27,17 @@ jobs:
         run: |
           set -euo pipefail
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
-            echo "Failed to fetch failed logs; skipping rerun to avoid broad retries."
+            echo "Failed to fetch failed logs; checking failed job/step metadata."
+            if JOBS_JSON="$(gh api "/repos/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null)"; then
+              if printf '%s' "$JOBS_JSON" | jq -e '.jobs[] | select(.conclusion=="failure" and .name=="copilot") | .steps[]? | select(.conclusion=="failure" and .name=="Processing Request (Linux)")' >/dev/null; then
+                gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
+                echo "Requested rerun based on matching failed job/step metadata."
+              else
+                echo "Failed job/step metadata does not match targeted transient scenario; not rerunning."
+              fi
+            else
+              echo "Failed to fetch run job metadata; not rerunning."
+            fi
             printf '%s\n' "$FAILED_LOGS"
             exit 0
           fi
