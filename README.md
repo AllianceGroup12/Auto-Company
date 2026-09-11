@@ -48,6 +48,17 @@ Each cycle is an independent CLI call. `memories/consensus.md` is the only cross
 - Windows users: start from [Windows (WSL) Quick Start](#windows-wsl-quick-start), then read [`docs/windows-setup.md`](docs/windows-setup.md)
 - macOS users: start from [macOS Quick Start](#macos-quick-start), then see [Command Quick Reference](#command-quick-reference-by-platform)
 
+## Alliance Group Quick Setup
+
+To steer this system for Alliance Group without changing agent internals:
+
+1. Initialize `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.md` from `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.template.md` if it does not exist.
+2. Set `Next Action` to one narrow Alliance Group goal that can be acted on in a single cycle.
+3. Fill `Company State` with the current Alliance Group context.
+4. Run `make start` from the repository root for the first observed cycle.
+5. Review artifacts under `docs/*/` after each cycle and keep steering by editing `memories/consensus.md`.
+6. Only create product code after a concrete opportunity is chosen, using `make project-new NAME=<slug>`.
+
 ## Team Lineup (14 Agents)
 
 This is not "you are a generic developer". It is "you are DHH" style role prompting with real expert mental models.
@@ -360,4 +371,3 @@ Any questions or suggestions? Please contact Zheyuan (Max) Kong (Carnegie Mellon
 
 Zheyuan (Max) Kong: kongzheyuan@outlook.com | zheyuank@tepper.cmu.edu
 GitHub: https://github.com/MaxMiksa/Auto-Company
-

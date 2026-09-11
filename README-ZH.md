@@ -48,6 +48,17 @@ daemon (launchd / systemd --user, 崩溃自重启)
 - Windows 用户：从 [Windows (WSL) 快速开始](#windows-wsl-快速开始) 开始，再看 [`docs/windows-setup.md`](docs/windows-setup.md)
 - macOS 用户：从 [macOS 快速开始](#macos-快速开始) 开始，再看 [命令速查（按平台）](#命令速查按平台)
 
+## Alliance Group 快速接入
+
+如果要把这套系统用于 Alliance Group，而不改 Agent 内部实现：
+
+1. 若 `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.md` 不存在，就基于 `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.template.md` 初始化。
+2. 把 `Next Action` 设成一个单轮就能执行的 Alliance Group 窄目标。
+3. 在 `Company State` 中填入当前 Alliance Group 的业务上下文。
+4. 第一次先在仓库根目录执行 `make start`，观察前台输出。
+5. 每轮结束后查看 `docs/*/` 里的产物，并持续只通过编辑 `memories/consensus.md` 来转向。
+6. 只有在确定具体机会后，才用 `make project-new NAME=<slug>` 创建独立产品仓库。
+
 ## 团队阵容（14 人）
 
 不是"你是一个开发者"，而是"你是 DHH"——用真实传奇人物激活 LLM 的深层知识。
@@ -361,4 +372,3 @@ auto-company/
 
 Zheyuan (Max) Kong: kongzheyuan@outlook.com | zheyuank@tepper.cmu.edu
 本项目 GitHub 链接：https://github.com/MaxMiksa/Auto-Company
-
