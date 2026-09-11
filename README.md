@@ -52,7 +52,6 @@ Each cycle is an independent CLI call. `memories/consensus.md` is the only cross
 
 To steer this system for Alliance Group without changing agent internals:
 
-1. Initialize `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.md` from `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.template.md` if it does not exist.
 1. Initialize `memories/consensus.md` from `memories/consensus.template.md` if it does not exist.
 2. Set `Next Action` to one narrow Alliance Group goal that can be acted on in a single cycle.
 3. Fill `Company State` with the current Alliance Group context.
