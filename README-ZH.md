@@ -52,7 +52,7 @@ daemon (launchd / systemd --user, 崩溃自重启)
 
 如果要把这套系统用于 Alliance Group，而不改 Agent 内部实现：
 
-1. 若 `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.md` 不存在，就基于 `/home/runner/work/Auto-Company/Auto-Company/memories/consensus.template.md` 初始化。
+1. 若 `memories/consensus.md` 不存在，就基于 `memories/consensus.template.md` 初始化。
 2. 把 `Next Action` 设成一个单轮就能执行的 Alliance Group 窄目标。
 3. 在 `Company State` 中填入当前 Alliance Group 的业务上下文。
 4. 第一次先在仓库根目录执行 `make start`，观察前台输出。
