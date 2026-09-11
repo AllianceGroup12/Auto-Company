@@ -25,7 +25,12 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
-          FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>/dev/null || true)"
+          set -euo pipefail
+          if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
+            echo "Failed to fetch failed logs; requesting one rerun as fallback."
+            gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
+            exit 0
+          fi
           if printf '%s' "$FAILED_LOGS" | grep -Fq "Failed to send pr_summary after 3 attempts"; then
             gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
             echo "Requested rerun for transient pr_summary failure."
