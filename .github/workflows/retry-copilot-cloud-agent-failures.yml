@@ -19,9 +19,16 @@ jobs:
       contains(fromJSON('["Copilot","github-copilot[bot]"]'), github.event.workflow_run.actor.login)
     runs-on: ubuntu-latest
     steps:
-      - name: Re-run failed jobs once
+      - name: Re-run only transient pr_summary failures
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
-        run: gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
+        run: |
+          FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>/dev/null || true)"
+          if printf '%s' "$FAILED_LOGS" | grep -Fq "Failed to send pr_summary after 3 attempts"; then
+            gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
+            echo "Requested rerun for transient pr_summary failure."
+          else
+            echo "No transient pr_summary failure detected; not rerunning."
+          fi
