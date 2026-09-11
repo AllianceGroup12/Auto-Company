@@ -29,7 +29,12 @@ jobs:
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
             echo "Failed to fetch failed logs; checking failed job/step metadata."
             if JOBS_JSON="$(gh api "/repos/$REPO/actions/runs/$RUN_ID/jobs" 2>/dev/null)"; then
-              if printf '%s' "$JOBS_JSON" | jq -e '.jobs[] | select(.conclusion=="failure" and .name=="copilot") | .steps[]? | select(.conclusion=="failure" and .name=="Processing Request (Linux)")' >/dev/null; then
+              if printf '%s' "$JOBS_JSON" | jq -e '
+                [.jobs[] | select(.conclusion=="failure")] as $failed
+                | ($failed | length) == 1
+                  and $failed[0].name == "copilot"
+                  and ([ $failed[0].steps[]? | select(.conclusion=="failure") | .name ] == ["Processing Request (Linux)"])
+              ' >/dev/null; then
                 gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
                 echo "Requested rerun based on matching failed job/step metadata."
               else
