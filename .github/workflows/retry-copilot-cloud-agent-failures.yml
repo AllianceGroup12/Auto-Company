@@ -27,13 +27,8 @@ jobs:
         run: |
           set -euo pipefail
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
-            if printf '%s' "$FAILED_LOGS" | grep -Eiq "HTTP (5[0-9]{2}|429)|context deadline exceeded|i/o timeout|TLS handshake timeout|connection reset by peer|connection refused"; then
-              echo "Transient error while fetching failed logs; requesting one rerun."
-              gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
-            else
-              echo "Failed to fetch failed logs for a non-transient reason; not rerunning."
-              printf '%s\n' "$FAILED_LOGS"
-            fi
+            echo "Failed to fetch failed logs; skipping rerun to avoid broad retries."
+            printf '%s\n' "$FAILED_LOGS"
             exit 0
           fi
           if printf '%s' "$FAILED_LOGS" | grep -Fq "Failed to send pr_summary after 3 attempts"; then
