@@ -43,11 +43,17 @@ jobs:
                   (if $failed_job_count == 1 then (($failed_steps | length) | tostring) else "0" end),
                   (if $failed_job_count == 1 and ($failed_steps | length) == 1 then (($failed_steps[0].name // "") | @base64) else "" end)
                 ]
-              | @tsv'
+              | join("|")'
             )"
-            IFS=$'\t' read -r FAILED_JOB_COUNT FAILED_JOB_NAME_B64 FAILED_STEP_COUNT FAILED_STEP_NAME_B64 <<< "$FALLBACK_FIELDS"
-            FAILED_JOB_NAME="$(printf '%s' "$FAILED_JOB_NAME_B64" | base64 --decode)"
-            FAILED_STEP_NAME="$(printf '%s' "$FAILED_STEP_NAME_B64" | base64 --decode)"
+            IFS='|' read -r FAILED_JOB_COUNT FAILED_JOB_NAME_B64 FAILED_STEP_COUNT FAILED_STEP_NAME_B64 <<< "$FALLBACK_FIELDS"
+            FAILED_JOB_NAME=""
+            FAILED_STEP_NAME=""
+            if [ "$FAILED_JOB_COUNT" = "1" ] && [ -n "$FAILED_JOB_NAME_B64" ]; then
+              FAILED_JOB_NAME="$(printf '%s' "$FAILED_JOB_NAME_B64" | base64 --decode)"
+            fi
+            if [ "$FAILED_STEP_COUNT" = "1" ] && [ -n "$FAILED_STEP_NAME_B64" ]; then
+              FAILED_STEP_NAME="$(printf '%s' "$FAILED_STEP_NAME_B64" | base64 --decode)"
+            fi
             if [ "$FAILED_JOB_COUNT" = "1" ] && [ "$FAILED_JOB_NAME" = "copilot" ] && [ "$FAILED_STEP_COUNT" = "1" ] && [ "$FAILED_STEP_NAME" = "Processing Request (Linux)" ]; then
               gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
               echo "Requested rerun based on exact copilot failure shape."
