@@ -33,7 +33,7 @@ jobs:
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
             echo "Failed to fetch failed logs; checking exact failed job/step shape."
             FALLBACK_FIELDS="$(gh api --paginate --slurp "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100" --jq '
-              [.[].jobs[] | select(.conclusion == "failure")] as $failed_jobs
+              [.[].jobs[] | select((.conclusion // "") != "success" and (.conclusion // "") != "skipped" and (.conclusion // "") != "neutral")] as $failed_jobs
               | ($failed_jobs | length) as $failed_job_count
               | ($failed_jobs[0].name // "") as $failed_job_name
               | (($failed_jobs[0].steps // []) | map(select(.conclusion == "failure"))) as $failed_steps
