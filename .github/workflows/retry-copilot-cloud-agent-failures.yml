@@ -30,12 +30,9 @@ jobs:
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
             echo "Failed to fetch failed logs; checking exact failed job/step shape."
             JOBS_JSON="$(gh api "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100")"
-            FALLBACK_PARSER=$'import json\nimport sys\n\ndata = json.load(sys.stdin)\nfailed_jobs = [job for job in data.get("jobs", []) if job.get("conclusion") == "failure"]\nfailed_job_name = failed_jobs[0].get("name", "") if len(failed_jobs) == 1 else ""\nfailed_steps = [step for step in failed_jobs[0].get("steps", []) if step.get("conclusion") == "failure"] if len(failed_jobs) == 1 else []\nfailed_step_name = failed_steps[0].get("name", "") if len(failed_steps) == 1 else ""\nprint(len(failed_jobs))\nprint(failed_job_name)\nprint(len(failed_steps))\nprint(failed_step_name)'
-            mapfile -t FALLBACK_FIELDS < <(printf '%s' "$JOBS_JSON" | python3 -c "$FALLBACK_PARSER")
-            FAILED_JOB_COUNT="${FALLBACK_FIELDS[0]}"
-            FAILED_JOB_NAME="${FALLBACK_FIELDS[1]}"
-            FAILED_STEP_COUNT="${FALLBACK_FIELDS[2]}"
-            FAILED_STEP_NAME="${FALLBACK_FIELDS[3]}"
+            FALLBACK_PARSER=$'import json\nimport sys\n\ndata = json.load(sys.stdin)\nfailed_jobs = [job for job in data.get("jobs", []) if job.get("conclusion") == "failure"]\nfailed_job_name = failed_jobs[0].get("name", "") if len(failed_jobs) == 1 else ""\nfailed_steps = [step for step in failed_jobs[0].get("steps", []) if step.get("conclusion") == "failure"] if len(failed_jobs) == 1 else []\nfailed_step_name = failed_steps[0].get("name", "") if len(failed_steps) == 1 else ""\nprint("\\t".join([str(len(failed_jobs)), failed_job_name, str(len(failed_steps)), failed_step_name]))'
+            FALLBACK_FIELDS="$(printf '%s' "$JOBS_JSON" | python3 -c "$FALLBACK_PARSER")"
+            IFS=$'\t' read -r FAILED_JOB_COUNT FAILED_JOB_NAME FAILED_STEP_COUNT FAILED_STEP_NAME <<< "$FALLBACK_FIELDS"
             if [ "$FAILED_JOB_COUNT" = "1" ] && [ "$FAILED_JOB_NAME" = "copilot" ] && [ "$FAILED_STEP_COUNT" = "1" ] && [ "$FAILED_STEP_NAME" = "Processing Request (Linux)" ]; then
               gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
               echo "Requested rerun based on exact copilot failure shape."
