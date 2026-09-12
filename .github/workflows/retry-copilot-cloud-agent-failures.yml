@@ -32,20 +32,22 @@ jobs:
           set -euo pipefail
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
             echo "Failed to fetch failed logs; checking exact failed job/step shape."
-            FALLBACK_FIELDS="$(gh api --paginate --slurp "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100" --jq '
+            FALLBACK_FIELDS_JSON="$(gh api --paginate --slurp "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100" --jq '
               [.[].jobs[] | select(.conclusion == "failure")] as $failed_jobs
               | ($failed_jobs | length) as $failed_job_count
               | ($failed_jobs[0].name // "") as $failed_job_name
               | (($failed_jobs[0].steps // []) | map(select(.conclusion == "failure"))) as $failed_steps
-              | [
-                  $failed_job_count,
-                  (if $failed_job_count == 1 then $failed_job_name else "" end),
-                  (if $failed_job_count == 1 then ($failed_steps | length) else 0 end),
-                  (if $failed_job_count == 1 and ($failed_steps | length) == 1 then ($failed_steps[0].name // "") else "" end)
-                ]
-              | @tsv'
+              | {
+                  failed_job_count: $failed_job_count,
+                  failed_job_name: (if $failed_job_count == 1 then $failed_job_name else "" end),
+                  failed_step_count: (if $failed_job_count == 1 then ($failed_steps | length) else 0 end),
+                  failed_step_name: (if $failed_job_count == 1 and ($failed_steps | length) == 1 then ($failed_steps[0].name // "") else "" end)
+                }'
             )"
-            IFS=$'\t' read -r FAILED_JOB_COUNT FAILED_JOB_NAME FAILED_STEP_COUNT FAILED_STEP_NAME <<< "$FALLBACK_FIELDS"
+            FAILED_JOB_COUNT="$(jq -r '.failed_job_count' <<< "$FALLBACK_FIELDS_JSON")"
+            FAILED_JOB_NAME="$(jq -r '.failed_job_name' <<< "$FALLBACK_FIELDS_JSON")"
+            FAILED_STEP_COUNT="$(jq -r '.failed_step_count' <<< "$FALLBACK_FIELDS_JSON")"
+            FAILED_STEP_NAME="$(jq -r '.failed_step_name' <<< "$FALLBACK_FIELDS_JSON")"
             if [ "$FAILED_JOB_COUNT" = "1" ] && [ "$FAILED_JOB_NAME" = "copilot" ] && [ "$FAILED_STEP_COUNT" = "1" ] && [ "$FAILED_STEP_NAME" = "Processing Request (Linux)" ]; then
               gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
               echo "Requested rerun based on exact copilot failure shape."
