@@ -30,8 +30,11 @@ jobs:
           if ! FAILED_LOGS="$(gh run view "$RUN_ID" --repo "$REPO" --log-failed 2>&1)"; then
             echo "Failed to fetch failed logs; checking exact failed job/step shape."
             JOBS_JSON="$(gh api "/repos/$REPO/actions/runs/$RUN_ID/jobs?per_page=100")"
-            SHOULD_RERUN="$(printf '%s' "$JOBS_JSON" | python3 -c 'import json, sys; data = json.load(sys.stdin); failed_jobs = [job for job in data.get(\"jobs\", []) if job.get(\"conclusion\") == \"failure\"]; ok = len(failed_jobs) == 1 and failed_jobs[0].get(\"name\") == \"copilot\"; failed_steps = [step for step in failed_jobs[0].get(\"steps\", []) if step.get(\"conclusion\") == \"failure\"] if ok else []; print(\"true\" if ok and len(failed_steps) == 1 and failed_steps[0].get(\"name\") == \"Processing Request (Linux)\" else \"false\")')"
-            if [ "$SHOULD_RERUN" = "true" ]; then
+            FAILED_JOB_COUNT="$(printf '%s' "$JOBS_JSON" | python3 -c 'import json, sys; data = json.load(sys.stdin); print(sum(1 for job in data.get(\"jobs\", []) if job.get(\"conclusion\") == \"failure\"))')"
+            FAILED_JOB_NAME="$(printf '%s' "$JOBS_JSON" | python3 -c 'import json, sys; data = json.load(sys.stdin); failed_jobs = [job for job in data.get(\"jobs\", []) if job.get(\"conclusion\") == \"failure\"]; print(failed_jobs[0].get(\"name\", \"\") if len(failed_jobs) == 1 else \"\")')"
+            FAILED_STEP_COUNT="$(printf '%s' "$JOBS_JSON" | python3 -c 'import json, sys; data = json.load(sys.stdin); failed_jobs = [job for job in data.get(\"jobs\", []) if job.get(\"conclusion\") == \"failure\"]; steps = failed_jobs[0].get(\"steps\", []) if len(failed_jobs) == 1 else []; print(sum(1 for step in steps if step.get(\"conclusion\") == \"failure\"))')"
+            FAILED_STEP_NAME="$(printf '%s' "$JOBS_JSON" | python3 -c 'import json, sys; data = json.load(sys.stdin); failed_jobs = [job for job in data.get(\"jobs\", []) if job.get(\"conclusion\") == \"failure\"]; failed_steps = [step for step in failed_jobs[0].get(\"steps\", []) if step.get(\"conclusion\") == \"failure\"] if len(failed_jobs) == 1 else []; print(failed_steps[0].get(\"name\", \"\") if len(failed_steps) == 1 else \"\")')"
+            if [ "$FAILED_JOB_COUNT" = "1" ] && [ "$FAILED_JOB_NAME" = "copilot" ] && [ "$FAILED_STEP_COUNT" = "1" ] && [ "$FAILED_STEP_NAME" = "Processing Request (Linux)" ]; then
               gh api --method POST "/repos/$REPO/actions/runs/$RUN_ID/rerun-failed-jobs"
               echo "Requested rerun based on exact copilot failure shape."
             else
